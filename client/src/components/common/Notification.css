@@ -1,0 +1,30 @@
+/* Notification.css */
+
+.notification {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .notification-info {
+    background-color: #d9edf7;
+    color: #31708f;
+  }
+  
+  .notification-error {
+    background-color: #f2dede;
+    color: #a94442;
+  }
+  
+  .notification-success {
+    background-color: #dff0d8;
+    color: #3c763d;
+  }
+  
+  .notification-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
