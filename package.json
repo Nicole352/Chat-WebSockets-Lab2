@@ -1,0 +1,27 @@
+{
+  "name": "chat-websockets-lab2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nicole352/Chat-WebSockets-Lab2.git"
+  },
+  "author": "Diaz Nicole, Yasig Juan",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nicole352/Chat-WebSockets-Lab2/issues"
+  },
+  "homepage": "https://github.com/Nicole352/Chat-WebSockets-Lab2#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "nodemon": "^3.1.10",
+    "socket.io": "^4.8.1"
+  }
+}
