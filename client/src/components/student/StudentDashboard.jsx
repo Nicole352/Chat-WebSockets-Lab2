@@ -1,24 +1,16 @@
+// client/src/components/student/StudentDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import socketService from '../../services/socketService';
-import { ROLES, API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL } from '../../utils/constants';
 
-const StudentDashboard = () => {
-  const [studentName, setStudentName] = useState('');
+const StudentDashboard = ({ displayName }) => {
+  const [studentName, setStudentName] = useState(displayName || '');
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Conectar socket y unirse como estudiante
-    socketService.connect();
-    socketService.joinRole(ROLES.STUDENT);
-
-    // Cargar equipos disponibles
     fetchEquipment();
-
-    return () => {
-      socketService.disconnect();
-    };
   }, []);
 
   const fetchEquipment = async () => {
@@ -32,7 +24,8 @@ const StudentDashboard = () => {
   };
 
   const handleRegister = async () => {
-    if (!studentName.trim() || !selectedEquipment) {
+    const nameToUse = (studentName || displayName || '').trim();
+    if (!nameToUse || !selectedEquipment) {
       alert('Por favor completa todos los campos');
       return;
     }
@@ -41,31 +34,25 @@ const StudentDashboard = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/equipment/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           equipmentId: selectedEquipment,
-          studentName: studentName.trim(),
+          studentName: nameToUse,
         }),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        // Emitir evento de socket
+        // Enviar evento socket global
         socketService.emitEquipmentRegistered({
-          nombreEstudiante: studentName.trim(),
+          nombreEstudiante: nameToUse,
           equipo: selectedEquipment,
         });
 
-        // Actualizar lista de equipos
-        fetchEquipment();
-        
-        // Limpiar formulario
-        setStudentName('');
+        await fetchEquipment();
+        setStudentName(displayName || '');
         setSelectedEquipment('');
-        
         alert('¡Equipo registrado exitosamente!');
       } else {
         alert(data.error || 'Error al registrar equipo');
@@ -114,11 +101,7 @@ const StudentDashboard = () => {
           </select>
         </div>
 
-        <button
-          onClick={handleRegister}
-          disabled={loading}
-          className="register-button"
-        >
+        <button onClick={handleRegister} disabled={loading} className="register-button">
           {loading ? 'Registrando...' : '📝 Registrar Equipo'}
         </button>
       </div>
@@ -127,10 +110,7 @@ const StudentDashboard = () => {
         <h3>Estado de Equipos</h3>
         <div className="equipment-grid">
           {equipment.map(eq => (
-            <div
-              key={eq.id}
-              className={`equipment-card ${eq.status}`}
-            >
+            <div key={eq.id} className={`equipment-card ${eq.status}`}>
               <div className="equipment-id">{eq.id}</div>
               <div className="equipment-status-badge">
                 {eq.status === 'available' ? '✅ Disponible' : '❌ Ocupado'}

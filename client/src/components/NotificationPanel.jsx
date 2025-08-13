@@ -1,67 +1,31 @@
-// client/src/components/NotificationPanel.jsx
-import React, { useState, useEffect } from "react";
-import { io } from "socket.io-client";
-import "./common/Notification.css";
+// client/src/components/common/NotificationPanel.jsx
+import React, { useEffect, useRef } from 'react';
 
-// Conectar con el backend
-const socket = io("http://localhost:3000", {
-  transports: ["websocket"], // optimiza la conexión
-});
-
-const NotificationPanel = () => {
-  const [notifications, setNotifications] = useState([]);
+const NotificationPanel = ({ notifications, onClear }) => {
+  const bottomRef = useRef(null);
 
   useEffect(() => {
-    // Función para agregar notificaciones al estado
-    const addNotification = (message, type) => {
-      const newNotification = {
-        id: Date.now(),
-        message,
-        type,
-      };
-
-      setNotifications((prev) => {
-        const updated = [newNotification, ...prev];
-        return updated.slice(0, 10); // máximo 10 notificaciones
-      });
-    };
-
-    // Escuchar eventos desde el backend
-    socket.on("userJoined", (username) => {
-      addNotification(`💚 ${username} ha ingresado al sistema`, "success");
-    });
-
-    socket.on("userLeft", (username) => {
-      addNotification(`💔 ${username} ha salido del sistema`, "error");
-    });
-
-    socket.on("pcOccupied", (pc) => {
-      addNotification(`💻 La PC ${pc} fue ocupada`, "info");
-    });
-
-    socket.on("pcReleased", (pc) => {
-      addNotification(`🖥️ La PC ${pc} fue liberada`, "warning");
-    });
-
-    return () => {
-      socket.off("userJoined");
-      socket.off("userLeft");
-      socket.off("pcOccupied");
-      socket.off("pcReleased");
-    };
-  }, []);
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [notifications]);
 
   return (
-    <div className="notification-panel">
-      <h3>🔔 Notificaciones</h3>
-      <ul>
-        {notifications.map((n) => (
-          <li key={n.id} className={`notification ${n.type}`}>
-            {n.message}
-          </li>
+    <aside className="notif-panel">
+      <div className="notif-header">
+        <span>🔔 Notificaciones</span>
+        <button className="notif-clear" onClick={onClear}>Limpiar</button>
+      </div>
+      <div className="notif-list">
+        {notifications.map(n => (
+          <div key={n.id} className={`notif-item ${n.type?.replace(':', '-') || ''}`}>
+            <div className="notif-msg">{n.message}</div>
+            <div className="notif-time">
+              {new Date(n.timestamp || Date.now()).toLocaleTimeString()}
+            </div>
+          </div>
         ))}
-      </ul>
-    </div>
+        <div ref={bottomRef} />
+      </div>
+    </aside>
   );
 };
 

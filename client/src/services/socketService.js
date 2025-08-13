@@ -1,5 +1,6 @@
 // client/src/services/socketService.js
 import { io } from 'socket.io-client';
+
 const SOCKET_URL = 'http://localhost:3000';
 
 class SocketService {
@@ -25,6 +26,7 @@ class SocketService {
     return this.socket;
   }
 
+  // ❗️Nunca desconectes desde children, solo desde App si hiciera falta
   disconnect() {
     if (this.socket) {
       this.socket.disconnect();
@@ -34,37 +36,35 @@ class SocketService {
   }
 
   joinRole(role) {
-    if (this.socket) this.socket.emit('join-role', role);
+    this.socket?.emit('join-role', role);
   }
 
-  // 👉 NUEVO: anunciar entrada
   emitUserJoin({ name, role }) {
-    if (this.socket) this.socket.emit('user:join', { name, role });
+    this.socket?.emit('user:join', { name, role });
   }
 
   emitEquipmentRegistered(data) {
-    if (this.socket) this.socket.emit('equipo:registrado', data);
+    this.socket?.emit('equipo:registrado', data);
   }
 
   emitEquipmentReleased(data) {
-    if (this.socket) this.socket.emit('equipo:liberado', data);
+    this.socket?.emit('equipo:liberado', data);
   }
 
   onEquipmentOccupied(callback) {
-    if (this.socket) this.socket.on('notificacion:equipoOcupado', callback);
+    this.socket?.on('notificacion:equipoOcupado', callback);
   }
 
   onEquipmentReleased(callback) {
-    if (this.socket) this.socket.on('notificacion:equipoLiberado', callback);
+    this.socket?.on('notificacion:equipoLiberado', callback);
   }
 
-  removeListener(event) {
-    if (this.socket) this.socket.off(event);
-  }
-
-  // 👉 NUEVO: listener unificado para el panel
   onNotif(callback) {
-    if (this.socket) this.socket.on('notif', callback);
+    this.socket?.on('notif', callback);
+  }
+
+  off(eventName, callback) {
+    this.socket?.off(eventName, callback);
   }
 }
 

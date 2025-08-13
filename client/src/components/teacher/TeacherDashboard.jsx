@@ -1,37 +1,34 @@
+// client/src/components/teacher/TeacherDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import socketService from '../../services/socketService';
 import Notification from '../common/Notification';
-import { ROLES, API_BASE_URL } from '../../utils/constants';
+import { API_BASE_URL } from '../../utils/constants';
 
 const TeacherDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [equipment, setEquipment] = useState([]);
 
   useEffect(() => {
-    // Conectar socket y unirse como docente
-    socketService.connect();
-    socketService.joinRole(ROLES.TEACHER);
-
-    // Cargar equipos
     fetchEquipment();
 
-    // Configurar listeners de notificaciones
-    socketService.onEquipmentOccupied((data) => {
+    const onOccupied = (data) => {
       const message = `🔴 ${data.nombreEstudiante} ha ocupado el equipo ${data.equipo}`;
       addNotification(message, 'warning');
-      fetchEquipment(); // Actualizar vista
-    });
-
-    socketService.onEquipmentReleased((data) => {
+      fetchEquipment();
+    };
+    const onReleased = (data) => {
       const message = `🟢 El equipo ${data.equipo} ha sido liberado`;
       addNotification(message, 'success');
-      fetchEquipment(); // Actualizar vista
-    });
+      fetchEquipment();
+    };
+
+    socketService.onEquipmentOccupied(onOccupied);
+    socketService.onEquipmentReleased(onReleased);
 
     return () => {
-      socketService.removeListener('notificacion:equipoOcupado');
-      socketService.removeListener('notificacion:equipoLiberado');
-      socketService.disconnect();
+      socketService.off('notificacion:equipoOcupado', onOccupied);
+      socketService.off('notificacion:equipoLiberado', onReleased);
+      // ❌ NO hacer disconnect aquí
     };
   }, []);
 
@@ -52,13 +49,8 @@ const TeacherDashboard = () => {
       type,
       timestamp: new Date(),
     };
-
     setNotifications(prev => [...prev, notification]);
-
-    // Auto-remover después de 5 segundos
-    setTimeout(() => {
-      removeNotification(notification.id);
-    }, 5000);
+    setTimeout(() => removeNotification(notification.id), 5000);
   };
 
   const removeNotification = (id) => {
@@ -69,9 +61,7 @@ const TeacherDashboard = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/equipment/release`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ equipmentId }),
       });
 
@@ -91,19 +81,12 @@ const TeacherDashboard = () => {
       <div className="dashboard-header">
         <h2>👨‍🏫 Panel del Docente</h2>
         <div className="stats">
-          <span className="stat">
-            📊 Total: {equipment.length}
-          </span>
-          <span className="stat">
-            ✅ Disponibles: {equipment.filter(eq => eq.status === 'available').length}
-          </span>
-          <span className="stat">
-            ❌ Ocupados: {occupiedEquipment.length}
-          </span>
+          <span className="stat">📊 Total: {equipment.length}</span>
+          <span className="stat">✅ Disponibles: {equipment.filter(eq => eq.status === 'available').length}</span>
+          <span className="stat">❌ Ocupados: {occupiedEquipment.length}</span>
         </div>
       </div>
 
-      {/* Notificaciones */}
       <div className="notifications-container">
         {notifications.map(notification => (
           <Notification
@@ -115,7 +98,6 @@ const TeacherDashboard = () => {
         ))}
       </div>
 
-      {/* Equipos Ocupados */}
       <div className="occupied-equipment">
         <h3>🖥️ Equipos en Uso</h3>
         {occupiedEquipment.length === 0 ? (
@@ -128,10 +110,7 @@ const TeacherDashboard = () => {
                   <h4>{eq.id}</h4>
                   <p>👤 Usuario: {eq.student}</p>
                 </div>
-                <button
-                  onClick={() => releaseEquipment(eq.id)}
-                  className="release-button"
-                >
+                <button onClick={() => releaseEquipment(eq.id)} className="release-button">
                   🔓 Liberar
                 </button>
               </div>
@@ -140,22 +119,16 @@ const TeacherDashboard = () => {
         )}
       </div>
 
-      {/* Vista General de Equipos */}
       <div className="equipment-overview">
         <h3>📋 Vista General</h3>
         <div className="equipment-grid">
           {equipment.map(eq => (
-            <div
-              key={eq.id}
-              className={`equipment-card ${eq.status}`}
-            >
+            <div key={eq.id} className={`equipment-card ${eq.status}`}>
               <div className="equipment-id">{eq.id}</div>
               <div className="equipment-status-badge">
                 {eq.status === 'available' ? '✅ Disponible' : '❌ Ocupado'}
               </div>
-              {eq.student && (
-                <div className="equipment-student">👤 {eq.student}</div>
-              )}
+              {eq.student && <div className="equipment-student">👤 {eq.student}</div>}
             </div>
           ))}
         </div>

@@ -8,35 +8,33 @@ import './styles/global.css';
 
 function App() {
   const [currentRole, setCurrentRole] = useState(null); // 'student' | 'teacher' | null
-  const [displayName, setDisplayName] = useState(''); // nombre mostrado en notificaciones
-  const [nameInput, setNameInput] = useState(''); // campo controlado
+  const [displayName, setDisplayName] = useState('');
+  const [nameInput, setNameInput] = useState('');
   const [notifications, setNotifications] = useState([]);
 
-  // Conexión de socket
   useEffect(() => {
     socketService.connect();
 
-    // Escuchar todas las notificaciones en tiempo real
-    socketService.onNotif((n) => {
-      setNotifications((prev) => {
+    const onNotif = (n) => {
+      setNotifications(prev => {
         const next = [...prev, n];
-        return next.length > 100 ? next.slice(1) : next; // mantener máximo 100
+        return next.length > 100 ? next.slice(1) : next;
       });
-    });
+    };
+
+    socketService.onNotif(onNotif);
 
     return () => {
+      socketService.off('notif', onNotif);
       socketService.disconnect();
     };
   }, []);
 
-  // Cuando se selecciona rol y nombre, enviar entrada
   useEffect(() => {
     if (currentRole && displayName) {
-      socketService.joinRole(currentRole === 'student' ? 'estudiante' : 'docente');
-      socketService.emitUserJoin({
-        name: displayName,
-        role: currentRole === 'student' ? 'estudiante' : 'docente',
-      });
+      const roleName = currentRole === 'student' ? 'estudiante' : 'docente';
+      socketService.joinRole(roleName);
+      socketService.emitUserJoin({ name: displayName, role: roleName });
     }
   }, [currentRole, displayName]);
 
@@ -55,7 +53,6 @@ function App() {
   };
   const clearNotifications = () => setNotifications([]);
 
-  // Pantalla de selección de rol
   if (!currentRole || !displayName) {
     return (
       <div className="role-selector">
@@ -88,14 +85,11 @@ function App() {
     );
   }
 
-  // Vista principal con panel de notificaciones
   return (
     <div className="app">
       <header className="app-header">
         <h1>🏫 Sistema de Laboratorio</h1>
-        <button onClick={resetRole} className="change-role-button">
-          🔄 Cambiar Rol
-        </button>
+        <button onClick={resetRole} className="change-role-button">🔄 Cambiar Rol</button>
       </header>
 
       <main className="app-main">
@@ -104,7 +98,6 @@ function App() {
           : <TeacherDashboard displayName={displayName} />}
       </main>
 
-      {/* Panel fijo de notificaciones */}
       <NotificationPanel notifications={notifications} onClear={clearNotifications} />
     </div>
   );

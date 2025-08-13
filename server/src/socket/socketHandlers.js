@@ -5,13 +5,11 @@ const socketHandlers = (io) => {
   io.on('connection', (socket) => {
     console.log('👤 Usuario conectado:', socket.id);
 
-    // Unirse a sala por rol (compatibilidad con tu lógica actual)
     socket.on('join-role', (role) => {
       socket.join(role);
       console.log(`📋 Usuario ${socket.id} se unió como ${role}`);
     });
 
-    // 👉 Nombre/rol opcional para mejorar notificaciones de entrada/salida
     socket.on('user:join', ({ name, role }) => {
       users.set(socket.id, { name: name || 'Usuario', role: role || 'desconocido' });
       io.emit('notif', {
@@ -22,18 +20,10 @@ const socketHandlers = (io) => {
       });
     });
 
-    // Registrar uso de equipo (ya lo tienes en el front)
     socket.on('equipo:registrado', (data) => {
       console.log('🖥️ Equipo registrado:', data);
 
-      // Mantengo tus eventos específicos para compatibilidad del TeacherDashboard:
-      io.to('docente').emit('notificacion:equipoOcupado', {
-        id: Date.now(),
-        ...data,
-        timestamp: new Date().toISOString()
-      });
-
-      // 👉 Nuevo: evento GLOBAL unificado para el panel de notificaciones
+      // Para el panel (todos)
       io.emit('notif', {
         id: Date.now(),
         type: 'equipo:registrado',
@@ -41,24 +31,31 @@ const socketHandlers = (io) => {
         payload: data,
         timestamp: new Date().toISOString()
       });
-    });
 
-    // Liberación de equipo
-    socket.on('equipo:liberado', (data) => {
-      console.log('✅ Equipo liberado:', data);
-
-      io.to('docente').emit('notificacion:equipoLiberado', {
+      // Compatibilidad con tu TeacherDashboard
+      io.to('docente').emit('notificacion:equipoOcupado', {
         id: Date.now(),
         ...data,
         timestamp: new Date().toISOString()
       });
+    });
 
-      // 👉 Nuevo: evento GLOBAL unificado
+    socket.on('equipo:liberado', (data) => {
+      console.log('✅ Equipo liberado:', data);
+
+      // Para el panel (todos)
       io.emit('notif', {
         id: Date.now(),
         type: 'equipo:liberado',
         message: `🟢 ${data.equipo} fue liberado`,
         payload: data,
+        timestamp: new Date().toISOString()
+      });
+
+      // Compatibilidad con tu TeacherDashboard
+      io.to('docente').emit('notificacion:equipoLiberado', {
+        id: Date.now(),
+        ...data,
         timestamp: new Date().toISOString()
       });
     });
@@ -74,7 +71,6 @@ const socketHandlers = (io) => {
         });
         users.delete(socket.id);
       } else {
-        // Desconexión sin user:join previo (igual informamos)
         io.emit('notif', {
           id: Date.now(),
           type: 'user:leave',
